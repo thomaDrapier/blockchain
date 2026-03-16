@@ -19,6 +19,7 @@ contract FreelanceHub {
         uint serviceId;
         address buyer;
         address payable seller;
+        uint amount;
         OrderStatus status;
     }
 
@@ -33,15 +34,15 @@ contract FreelanceHub {
     event OrderPlaced(uint orderId, uint serviceId, address buyer);
     event OrderStatusChanged(uint orderId, OrderStatus newStatus);
 
-    // --- À SUIVRE : LES FONCTIONS ---
+    // --- LES FONCTIONS ---
 
     // 1. Créer un service (Section : Services enregistrés)
-    function createService(string memory _name, uint _priceInWei, uint _duration) public {
+    function createService(string memory _name, uint _priceInEth, uint _duration) public {
         require(bytes(_name).length > 0, "Le nom est requis");
-        require(_priceInWei > 0, "Le prix doit etre superieur a 0");
+        require(_priceInEth > 0, "Le prix doit etre superieur a 0");
 
         serviceCount++;
-        services[serviceCount] = Service(serviceCount, payable(msg.sender), _name, _priceInWei, _duration, true);
+        services[serviceCount] = Service(serviceCount, payable(msg.sender), _name, _priceInEth, _duration, true);
         
         emit ServiceCreated(serviceCount, _name, msg.sender);
     }
@@ -57,7 +58,7 @@ contract FreelanceHub {
 
         orderCount++;
         // On enregistre la commande avec l'acheteur payable pour un potentiel remboursement
-        orders[orderCount] = Order(orderCount, _serviceId, payable(msg.sender), _service.seller, OrderStatus.Pending);
+        orders[orderCount] = Order(orderCount, _serviceId, payable(msg.sender), _service.seller, msg.value, OrderStatus.Pending);
         
         emit OrderPlaced(orderCount, _serviceId, msg.sender);
     }
@@ -73,8 +74,8 @@ contract FreelanceHub {
             _order.status = OrderStatus.Accepted;
         } else {
             // Remboursement immédiat si le vendeur refuse
-            _order.status = OrderStatus.None; 
-            _order.buyer.transfer(_order.amount); // On renvoie l'argent à l'acheteur
+            _order.status = OrderStatus.None;
+            payable(_order.buyer).transfer(_order.amount); // On renvoie l'argent à l'acheteur
         }
         
         emit OrderStatusChanged(_orderId, _order.status);
