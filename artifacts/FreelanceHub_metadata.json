@@ -109,7 +109,7 @@
 					},
 					{
 						"internalType": "uint256",
-						"name": "_priceInEth",
+						"name": "_priceInWei",
 						"type": "uint256"
 					},
 					{
@@ -284,11 +284,11 @@
 	},
 	"sources": {
 		"FreelanceHub.sol": {
-			"keccak256": "0xd93ba61f9b5a3f2936dda35653cd1bad30f2bc5e42da90617830e6f037373180",
+			"keccak256": "0x8fec0837ce35dbceec7f6303b13f33713d959e9d3c71a4fda92d51d86574e458",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://b0c2bb5a0cdfcbecc69a39b13bfb5a619f5e7f1072d8f428064136adfe5483c0",
-				"dweb:/ipfs/QmYXExGQGh5QtjUxybXt6LMNBPWNzewt6HeHNF157C5sxo"
+				"bzz-raw://7f613675e5e19bc19e1c203786e10f050439ec6cf3298e5f6ecb47f02614991c",
+				"dweb:/ipfs/QmTU85jXx42FkHHex959ALpf7fGuWrzrv3WzjYsouVCHiV"
 			]
 		}
 	},

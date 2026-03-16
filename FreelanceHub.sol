@@ -9,7 +9,7 @@ contract FreelanceHub {
         uint id;
         address payable seller;
         string name;
-        uint price; // en eth
+        uint price; // en wei
         uint duration; // en jours
         bool active;
     }
@@ -37,12 +37,12 @@ contract FreelanceHub {
     // --- LES FONCTIONS ---
 
     // 1. Créer un service (Section : Services enregistrés)
-    function createService(string memory _name, uint _priceInEth, uint _duration) public {
+    function createService(string memory _name, uint _priceInWei, uint _duration) public {
         require(bytes(_name).length > 0, "Le nom est requis");
-        require(_priceInEth > 0, "Le prix doit etre superieur a 0");
+        require(_priceInWei > 0, "Le prix doit etre superieur a 0");
 
         serviceCount++;
-        services[serviceCount] = Service(serviceCount, payable(msg.sender), _name, _priceInEth, _duration, true);
+        services[serviceCount] = Service(serviceCount, payable(msg.sender), _name, _priceInWei, _duration, true);
         
         emit ServiceCreated(serviceCount, _name, msg.sender);
     }
@@ -54,7 +54,6 @@ contract FreelanceHub {
         
         require(_service.id > 0 && _service.active, "Service inexistant ou inactif");
         require(msg.value == _service.price, "Veuillez envoyer le montant exact");
-        require(msg.sender != _service.seller, "Vous ne pouvez pas acheter votre propre service");
 
         orderCount++;
         // On enregistre la commande avec l'acheteur payable pour un potentiel remboursement
