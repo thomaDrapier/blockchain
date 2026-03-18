@@ -1,16 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+/**
+ * @title FreelanceHub
+ * @dev Plateforme de mise en relation de freelances avec un systeme de paiement par sequestre (escrow).
+ */
 contract FreelanceHub {
     
-    enum OrderStatus { None, Pending, Accepted, Completed }
+    // Definition du cycle de vie d'une commande
+    // None: Annulee ou inexistante
+    // Pending: En attente d'acceptation par le vendeur
+    // Accepted: En cours de realisation par le vendeur
+    // Delivered: Travail fourni, en attente de validation par l'acheteur
+    // Completed: Travail valide, fonds transferes au vendeur
+    enum OrderStatus { None, Pending, Accepted, Delivered, Completed }
 
     struct Service {
         uint id;
         address payable seller;
         string name;
-        uint price; // en wei
-        uint duration; // en jours
+        uint price; // Exprime en Wei pour la precision
+        uint duration; // Exprime en jours
         bool active;
     }
 
@@ -29,17 +39,17 @@ contract FreelanceHub {
     mapping(uint => Service) public services;
     mapping(uint => Order) public orders;
 
-    // Événements pour les "Messages" (Notifications Frontend)
+    // Indexation des evenements pour faciliter l'ecoute via le front-end
     event ServiceCreated(uint id, string name, address seller);
     event OrderPlaced(uint orderId, uint serviceId, address buyer);
     event OrderStatusChanged(uint orderId, OrderStatus newStatus);
 
-    // --- LES FONCTIONS ---
-
-    // 1. Créer un service (Section : Services enregistrés)
+    /**
+     * @dev Permet a un vendeur de referencer une nouvelle prestation.
+     */
     function createService(string memory _name, uint _priceInWei, uint _duration) public {
-        require(bytes(_name).length > 0, "Le nom est requis");
-        require(_priceInWei > 0, "Le prix doit etre superieur a 0");
+        require(bytes(_name).length > 0, "Le nom du service est requis");
+        require(_priceInWei > 0, "Le prix doit etre superieur a zero");
 
         serviceCount++;
         services[serviceCount] = Service(serviceCount, payable(msg.sender), _name, _priceInWei, _duration, true);
@@ -47,49 +57,65 @@ contract FreelanceHub {
         emit ServiceCreated(serviceCount, _name, msg.sender);
     }
 
-    // 2. Acheter un service (Section : Acheter des services)
-    // L'argent est envoyé ici et reste bloqué sur le contrat
+    /**
+     * @dev Permet a un acheteur de commander un service.
+     * Les fonds sont conserves par le contrat (sequestre) jusqu'a la finalisation.
+     */
     function buyService(uint _serviceId) public payable {
         Service storage _service = services[_serviceId];
-        
-        require(_service.id > 0 && _service.active, "Service inexistant ou inactif");
-        require(msg.value == _service.price, "Veuillez envoyer le montant exact");
+        require(_service.id > 0 && _service.active, "Service inexistant ou marque comme inactif");
+        require(msg.value == _service.price, "Le montant envoye ne correspond pas au prix du service");
 
         orderCount++;
-        // On enregistre la commande avec l'acheteur payable pour un potentiel remboursement
-        orders[orderCount] = Order(orderCount, _serviceId, payable(msg.sender), _service.seller, msg.value, OrderStatus.Pending);
+        // L'acheteur est stocke en tant qu'adresse pour permettre un remboursement en cas de refus
+        orders[orderCount] = Order(orderCount, _serviceId, msg.sender, _service.seller, msg.value, OrderStatus.Pending);
         
         emit OrderPlaced(orderCount, _serviceId, msg.sender);
     }
 
-    // 3. Accepter ou Refuser (Section : Messages)
+    /**
+     * @dev Permet au vendeur d'accepter ou de refuser une commande entrante.
+     * En cas de refus, les fonds sont immediatement restitues a l'acheteur.
+     */
     function respondToOrder(uint _orderId, bool _accept) public {
         Order storage _order = orders[_orderId];
-        
-        require(msg.sender == _order.seller, "Seul le vendeur peut repondre");
-        require(_order.status == OrderStatus.Pending, "Statut invalide");
+        require(msg.sender == _order.seller, "Autorisation refusee : Vendeur uniquement");
+        require(_order.status == OrderStatus.Pending, "La commande n'est pas en attente d'une reponse");
 
         if (_accept) {
             _order.status = OrderStatus.Accepted;
         } else {
-            // Remboursement immédiat si le vendeur refuse
             _order.status = OrderStatus.None;
-            payable(_order.buyer).transfer(_order.amount); // On renvoie l'argent à l'acheteur
+            payable(_order.buyer).transfer(_order.amount);
         }
         
         emit OrderStatusChanged(_orderId, _order.status);
     }
 
-    // 4. Valider le travail (Section : Travail en cours)
+    /**
+     * @dev Permet au vendeur de signaler que le travail a ete fourni.
+     * Cette etape est necessaire pour que l'acheteur puisse proceder a la validation finale.
+     */
+    function deliverOrder(uint _orderId) public {
+        Order storage _order = orders[_orderId];
+        require(msg.sender == _order.seller, "Autorisation refusee : Vendeur uniquement");
+        require(_order.status == OrderStatus.Accepted, "La commande doit etre au statut 'Acceptee' pour etre livree");
+
+        _order.status = OrderStatus.Delivered;
+        
+        emit OrderStatusChanged(_orderId, _order.status);
+    }
+
+    /**
+     * @dev Permet a l'acheteur de valider la conformite du travail.
+     * Declenche la liberation des fonds du sequestre vers le portefeuille du vendeur.
+     */
     function completeOrder(uint _orderId) public {
         Order storage _order = orders[_orderId];
-        
-        require(msg.sender == _order.buyer, "Seul l'acheteur peut valider");
-        require(_order.status == OrderStatus.Accepted, "Le travail n'est pas en cours");
+        require(msg.sender == _order.buyer, "Autorisation refusee : Acheteur uniquement");
+        require(_order.status == OrderStatus.Delivered, "Le vendeur n'a pas encore livre la commande");
 
         _order.status = OrderStatus.Completed;
-        
-        // Transfert final de l'argent du contrat vers le vendeur
         _order.seller.transfer(services[_order.serviceId].price);
         
         emit OrderStatusChanged(_orderId, _order.status);

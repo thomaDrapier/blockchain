@@ -124,6 +124,19 @@
 				"type": "function"
 			},
 			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_orderId",
+						"type": "uint256"
+					}
+				],
+				"name": "deliverOrder",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
 				"inputs": [],
 				"name": "orderCount",
 				"outputs": [
@@ -257,8 +270,26 @@
 			}
 		],
 		"devdoc": {
+			"details": "Plateforme de mise en relation de freelances avec un systeme de paiement par sequestre (escrow).",
 			"kind": "dev",
-			"methods": {},
+			"methods": {
+				"buyService(uint256)": {
+					"details": "Permet a un acheteur de commander un service. Les fonds sont conserves par le contrat (sequestre) jusqu'a la finalisation."
+				},
+				"completeOrder(uint256)": {
+					"details": "Permet a l'acheteur de valider la conformite du travail. Declenche la liberation des fonds du sequestre vers le portefeuille du vendeur."
+				},
+				"createService(string,uint256,uint256)": {
+					"details": "Permet a un vendeur de referencer une nouvelle prestation."
+				},
+				"deliverOrder(uint256)": {
+					"details": "Permet au vendeur de signaler que le travail a ete fourni. Cette etape est necessaire pour que l'acheteur puisse proceder a la validation finale."
+				},
+				"respondToOrder(uint256,bool)": {
+					"details": "Permet au vendeur d'accepter ou de refuser une commande entrante. En cas de refus, les fonds sont immediatement restitues a l'acheteur."
+				}
+			},
+			"title": "FreelanceHub",
 			"version": 1
 		},
 		"userdoc": {
@@ -284,11 +315,11 @@
 	},
 	"sources": {
 		"FreelanceHub.sol": {
-			"keccak256": "0x8fec0837ce35dbceec7f6303b13f33713d959e9d3c71a4fda92d51d86574e458",
+			"keccak256": "0x24ec2a7b9175b9d3f8cf89dc4d0e63b6a6aa86a569325c98790cf8d9c0d3c849",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://7f613675e5e19bc19e1c203786e10f050439ec6cf3298e5f6ecb47f02614991c",
-				"dweb:/ipfs/QmTU85jXx42FkHHex959ALpf7fGuWrzrv3WzjYsouVCHiV"
+				"bzz-raw://4fb95d6a6e86d068069a983d51d116fabd236dfec118c2c7c86187429b93301a",
+				"dweb:/ipfs/QmXkNGDf8N8WG9f7TNx3KNuMQnfzfT3qFDMz9BGtBeZzfR"
 			]
 		}
 	},
